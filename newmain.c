@@ -158,6 +158,7 @@ void lcd_init(void)
 	lcd_cmd(L_ON); //Initialize with 0x0F
 	lcd_cmd(L_CLR); //Clear with 0x01
 	lcd_cmd(L_CFG); //Configure
+    lcd_cmd(0x0C);// configure for no cursor
     lcd_cmd(L_L1);
 }
 
@@ -186,7 +187,7 @@ void lcd_custom_char(unsigned char loc, unsigned char * msg)
     }
 }
 
-void reverse_array(unsigned char* buffer)
+void reverse_array(unsigned char* buffer) // Runtime O(N), Space O(1)
 {
     unsigned int j = 7; unsigned int k = 0;
     while(j > k)
@@ -209,10 +210,15 @@ void main(void) {
      */
     unsigned char upper_left[8] =
     {0x00, 0x00, 0x00, 0x00, 0x07, 0x0F, 0x0F, 0x0F};
-//    char lower_left[8] = 
-//    {0x0F, 0x0F, 0x0F, 0x07, 0x00, 0x00, 0x00, 0x00};
     unsigned char upper_right[8] =
     {0x00, 0x00, 0x00, 0x00, 0x1C, 0x1E, 0x1E, 0x1E};
+    
+    unsigned char inverse_left[8] =
+    {0x1F, 0x1F, 0x1F, 0x1F, 0x18, 0x10, 0x10, 0x10};
+    unsigned char inverse_right[8] =
+    {0x1F, 0x1F, 0x1F, 0x1F, 0x03, 0x01, 0x01, 0x01};
+    
+    
     
     //Inicjalizacja konwertera analogowo cyfrowego
     ADCON0=0x01;
@@ -231,8 +237,7 @@ void main(void) {
     unsigned int counter = 0;
     unsigned int inter;
     
-    //lcd_custom_char(0, smiley); // write to CGRAM at index 0
-    lcd_custom_char(0, upper_left);
+    lcd_custom_char(0, upper_left); // write to CGRAM at index 0
     reverse_array(upper_left); // reverse array for lower portion
     lcd_custom_char(1, upper_left); 
     
@@ -240,19 +245,27 @@ void main(void) {
     reverse_array(upper_right);
     lcd_custom_char(3, upper_right);
     
+    lcd_custom_char(4, inverse_left);
+    reverse_array(inverse_left);
+    lcd_custom_char(5, inverse_left);
+    
+    lcd_custom_char(6, inverse_right);
+    reverse_array(inverse_right);
+    lcd_custom_char(7, inverse_right);
+    
     while(counter < 5)
     {
        delay(1000);
        lcd_cmd(L_CLR);
-       lcd_cmd(L_L1); //Ustawienie karetki w pierwszej linii
-       lcd_str("Good evening  "); //napis
+       lcd_cmd(L_L1);
+       lcd_str("  Good evening  ");
        
        delay(3000);
        lcd_cmd(L_CLR);
-       lcd_cmd(L_L1); //Ustawienie karetki w pierwszej linii
-       lcd_str(" Want to listen"); //napis
-       lcd_cmd(L_L2); //Przej??ie do drugiej linii
-       lcd_str(" To eurobeat?");
+       lcd_cmd(L_L1);
+       lcd_str(" Want to listen");
+       lcd_cmd(L_L2);
+       lcd_str("  To eurobeat?");
        
        delay(3000);
        
@@ -260,28 +273,56 @@ void main(void) {
        
        for(inter = 0; inter < 5; inter++)
        {
-            lcd_cmd(L_L1); //Ustawienie karetki w pierwszej linii
-            lcd_str("   GO TO JAPAN"); //napis
+            lcd_cmd(L_L1);
+            lcd_str("   GO TO JAPAN");
             lcd_cmd(L_L2);
-            lcd_str(" RIGHT NOW!!!"); //napis
+            lcd_str("  RIGHT NOW!!!");
        
             delay(300);
             lcd_cmd(L_CLR);
             delay(300);
        }
        
-
        lcd_cmd(L_CLR);
        
-       lcd_cmd(L_L1|(7)); // |(x) tells what position to put at
-       lcd_dat(0);
-       lcd_cmd(L_L2|(7));
-       lcd_dat(1);
-       lcd_cmd(L_L1|(8)); // |(x) tells what position to put at
-       lcd_dat(2);
-       lcd_cmd(L_L2|(8));
-       lcd_dat(3);
-       
+       for(inter = 0; inter < 5; inter++)
+       {
+            lcd_cmd(L_CLR);
+            lcd_cmd(L_L1|(7)); // |(x) tells what position to put at
+            lcd_dat(0);
+            lcd_cmd(L_L2|(7));
+            lcd_dat(1);
+            lcd_cmd(L_L1|(8)); // |(x) tells what position to put at
+            lcd_dat(2);
+            lcd_cmd(L_L2|(8));
+            lcd_dat(3);
+            delay(300);
+            
+            lcd_cmd(L_CLR);
+            
+            char blacked[16] = {
+                0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
+            };
+            
+            lcd_cmd(L_L1);
+            lcd_str(blacked);
+            lcd_cmd(L_L2);
+            lcd_str(blacked);
+            
+            
+            lcd_cmd(L_L1|(7)); // |(x) tells what position to put at
+            lcd_dat(4);
+            lcd_cmd(L_L2|(7));
+            lcd_dat(5);
+            lcd_cmd(L_L1|(8)); // |(x) tells what position to put at
+            lcd_dat(6);
+            lcd_cmd(L_L2|(8));
+            lcd_dat(7);
+//            lcd_cmd(L_L2|(10));
+//            lcd_dat(0xFF);
+            delay(300);
+       }
        counter ++;
     }
     return;
